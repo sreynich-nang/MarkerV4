@@ -10,6 +10,7 @@ BASE_DIR = Path(__file__).resolve().parents[2]
 TEMP_DIR = BASE_DIR / "temp"
 UPLOADS_DIR = TEMP_DIR / "uploads"
 OUTPUTS_DIR = TEMP_DIR / "outputs"
+FILTERS_DIR = TEMP_DIR / "filters"
 LOGS_DIR = BASE_DIR / "logs"
 
 # Marker CLI configuration
@@ -40,5 +41,5 @@ else:
 
 # Ensure directories exist at runtime
 def ensure_dirs():
-    for p in (TEMP_DIR, UPLOADS_DIR, OUTPUTS_DIR, LOGS_DIR):
+    for p in (TEMP_DIR, UPLOADS_DIR, OUTPUTS_DIR, FILTERS_DIR, LOGS_DIR):
         p.mkdir(parents=True, exist_ok=True)
