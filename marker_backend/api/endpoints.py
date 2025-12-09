@@ -4,8 +4,10 @@ from ..core.logger import get_logger
 from ..core.config import ensure_dirs, UPLOADS_DIR, OUTPUTS_DIR, FILTERS_DIR  
 from ..services.file_handler import save_upload    
 from ..services.marker_runner import run_marker_for_chunk    
+from ..services.pdf_converter import convert_pdf_and_process
 from ..models.schemas import UploadResponse, TableExtractionResponse    
 from ..core.exceptions import InvalidFileError, MarkerError  # Removed ChunkingError  
+from pathlib import Path
 import time    
     
 router = APIRouter()    
@@ -14,15 +16,30 @@ logger = get_logger(__name__)
     
 @router.post("/upload", response_model=UploadResponse)    
 async def upload_pdf(file: UploadFile = File(...)):    
-    """Upload a PDF and process it with marker."""    
+    """Upload a PDF or image and process it with marker.
+    
+    For PDFs: Converts to images, processes each page with marker_single, combines output.
+    For images: Processes directly with marker_single.
+    """
     ensure_dirs()    
     start = time.time()    
     try:    
         saved_path = await save_upload(file)    
-        logger.info(f"Saved upload to {saved_path}")    
-    
-        output = run_marker_for_chunk(saved_path)    
-        logger.info(f"Marker produced output file: {output}")    
+        logger.info(f"Saved upload to {saved_path}")
+        
+        # Check file type
+        file_suffix = saved_path.suffix.lower()
+        
+        if file_suffix == ".pdf":
+            # Use PDF converter workflow for PDFs
+            logger.info(f"PDF detected, using conversion workflow: {saved_path}")
+            output = convert_pdf_and_process(saved_path, output_dir=OUTPUTS_DIR, keep_images=False)
+        else:
+            # Direct processing for images
+            logger.info(f"Image detected, processing directly with marker_single: {saved_path}")
+            output = run_marker_for_chunk(saved_path)
+        
+        logger.info(f"Processing produced output file: {output}")    
     
         elapsed = time.time() - start    
     
