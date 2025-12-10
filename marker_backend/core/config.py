@@ -18,7 +18,8 @@ LOGS_DIR = BASE_DIR / "logs"
 # Set to the marker CLI/binary you have installed, e.g. "marker_single" or full path
 MARKER_CLI = os.environ.get("MARKER_CLI", "marker_single")
 # Extra flags passed as a list, e.g. ["--force_ocr", "--language", "eng"]
-MARKER_FLAGS = os.environ.get("MARKER_FLAGS", f"--force_ocr --output_format markdown --output_dir {OUTPUTS_DIR}").split()
+# Note: --output_dir is set dynamically per marker run, so don't include it here
+MARKER_FLAGS = os.environ.get("MARKER_FLAGS", "--force_ocr --output_format markdown").split()
 OUTPUT_FORMAT = os.environ.get("OUTPUT_FORMAT", "markdown")
 
 # Logging

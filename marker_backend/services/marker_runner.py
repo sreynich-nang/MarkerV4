@@ -50,9 +50,19 @@ def run_marker_for_chunk(chunk_path: Path, output_dir: Path = None) -> Path:
         raise
 
     # Build command with custom output directory
-    cmd = [MARKER_CLI, str(chunk_path), "--output_dir", str(output_dir)] + [
-        flag for flag in MARKER_FLAGS if "--output_dir" not in flag
-    ]
+    # Filter out any existing --output_dir flags and their arguments
+    filtered_flags = []
+    skip_next = False
+    for i, flag in enumerate(MARKER_FLAGS):
+        if skip_next:
+            skip_next = False
+            continue
+        if flag == "--output_dir":
+            skip_next = True  # Skip the next item (the path argument)
+            continue
+        filtered_flags.append(flag)
+    
+    cmd = [MARKER_CLI, str(chunk_path), "--output_dir", str(output_dir)] + filtered_flags
 
     logger.info(f"Starting Marker for {chunk_path} with cmd: {' '.join(shlex.quote(p) for p in cmd)}")
     start = time.time()
