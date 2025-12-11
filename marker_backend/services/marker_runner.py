@@ -112,15 +112,17 @@ def run_marker_for_chunk(chunk_path: Path, output_dir: Path = None) -> Path:
     except Exception:
         pass
 
-    # Parse stdout/stderr for any .md path
+    # Parse stdout/stderr for any .md path or directory path
     text = (res.stdout or "") + "\n" + (res.stderr or "")
     import re
-    md_paths = re.findall(r"[A-Za-z0-9_:\\/.\- ]+\.md", text)
+    
+    # Look for both .md files and directory paths in the output
+    md_paths = re.findall(r"[A-Za-z0-9_:\\/.\- ]+(?:\.md|/[A-Za-z0-9_\- ]+)(?:\s|$)", text)
     for p in md_paths:
         p = p.strip()
         try:
             pth = Path(p)
-            if pth.exists() and pth.is_file():
+            if pth.exists():
                 candidates.append(pth)
         except Exception:
             continue
@@ -137,18 +139,26 @@ def run_marker_for_chunk(chunk_path: Path, output_dir: Path = None) -> Path:
     candidates.sort(key=lambda p: p.stat().st_mtime if p.exists() else 0, reverse=True)
 
     if candidates:
-        chosen = candidates[0]
-        logger.info(f"Discovered Marker output at {chosen}")
-        
-        # If it's a directory, look for .md file inside
-        if chosen.is_dir():
-            md_files = list(chosen.glob("*.md"))
-            if md_files:
-                chosen = md_files[0]
-                logger.info(f"Found markdown file inside directory: {chosen}")
-        
-        if chosen.is_file() and chosen.suffix == ".md":
-            return chosen
+        for chosen in candidates:
+            logger.info(f"Discovered Marker output at {chosen}")
+            
+            # If it's a directory, look for .md file inside (recursively up to 2 levels)
+            if chosen.is_dir():
+                # First look for .md file directly in the directory
+                md_files = list(chosen.glob("*.md"))
+                if md_files:
+                    md_file = md_files[0]
+                    logger.info(f"Found markdown file inside directory: {md_file}")
+                    return md_file
+                
+                # If not found, look one level deeper
+                md_files = list(chosen.glob("*/*.md"))
+                if md_files:
+                    md_file = md_files[0]
+                    logger.info(f"Found markdown file in subdirectory: {md_file}")
+                    return md_file
+            elif chosen.is_file() and chosen.suffix == ".md":
+                return chosen
 
     # Nothing found
     logger.error("Marker finished but no markdown output discovered; stdout/stderr below:\n%s", text)
